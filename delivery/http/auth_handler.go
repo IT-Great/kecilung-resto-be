@@ -61,6 +61,7 @@ func updateProfile(u domain.AuthUsecase) gin.HandlerFunc {
 		
 		name := c.PostForm("name")
 		username := c.PostForm("username")
+		email := c.PostForm("email") // TAMBAHAN: Ambil nilai email dari form data
 		password := c.PostForm("password") // Opsional
 
 		var imageURL string
@@ -75,6 +76,7 @@ func updateProfile(u domain.AuthUsecase) gin.HandlerFunc {
 		adminData := domain.Admin{
 			Name:     name,
 			Username: username,
+			Email:    email, // TAMBAHAN: Masukkan ke struct
 			Password: password,
 		}
 		
