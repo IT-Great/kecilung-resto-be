@@ -37,3 +37,10 @@ func (r *authRepo) CreateDefaultAdmin(admin *domain.Admin) error {
 	}
 	return nil // Jangan buat lagi jika sudah ada admin
 }
+
+// Tambahkan fungsi ini di dalam file repository/auth_repository.go
+func (r *authRepo) GetAdminByEmail(email string) (domain.Admin, error) {
+	var admin domain.Admin
+	err := r.db.Where("email = ?", email).First(&admin).Error
+	return admin, err
+}

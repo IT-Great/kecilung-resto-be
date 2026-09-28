@@ -14,6 +14,11 @@ func RegisterAuthHandlers(rg *gin.RouterGroup, u domain.AuthUsecase) {
 		auth.POST("/login", login(u))
 		auth.GET("/profile/:id", getProfile(u))
 		auth.PUT("/profile/:id", updateProfile(u))
+
+		// TAMBAHAN ROUTES LUPA PASSWORD
+		auth.POST("/forgot-password", requestOTP(u))
+		auth.POST("/verify-otp", verifyOTP(u))
+		auth.POST("/reset-password", resetPassword(u))
 	}
 }
 
@@ -82,5 +87,56 @@ func updateProfile(u domain.AuthUsecase) gin.HandlerFunc {
 			return
 		}
 		c.JSON(200, gin.H{"message": "Profil berhasil diperbarui"})
+	}
+}
+
+func requestOTP(u domain.AuthUsecase) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct { Email string `json:"email"` }
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"error": "Format email tidak valid"})
+			return
+		}
+		if err := u.RequestOTP(req.Email); err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Kode OTP telah dikirim ke email Anda"})
+	}
+}
+
+func verifyOTP(u domain.AuthUsecase) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct { 
+			Email string `json:"email"`
+			OTP   string `json:"otp"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"error": "Input tidak valid"})
+			return
+		}
+		if err := u.VerifyOTP(req.Email, req.OTP); err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"message": "OTP valid, silakan atur password baru"})
+	}
+}
+
+func resetPassword(u domain.AuthUsecase) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct { 
+			Email       string `json:"email"`
+			NewPassword string `json:"new_password"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"error": "Input tidak valid"})
+			return
+		}
+		if err := u.ResetPassword(req.Email, req.NewPassword); err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Password berhasil diubah, silakan login"})
 	}
 }
