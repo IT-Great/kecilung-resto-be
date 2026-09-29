@@ -84,6 +84,13 @@ func createBooking(u domain.CateringUsecase) gin.HandlerFunc {
 			c.JSON(409, gin.H{"error": err.Error()})
 			return
 		}
+
+		// === TRIGGER NOTIFIKASI WEBSOCKET ===
+		utils.Hub.Broadcast <- utils.WsMessage{
+			Type:    "NEW_CATERING_BOOKING",
+			Message: "Ada booking katering baru dari " + b.CustomerName,
+		}
+		
 		c.JSON(201, gin.H{"message": "Booking berhasil diajukan"})
 	}
 }

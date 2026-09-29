@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/seanalden-great/kecilung-resto-be/domain"
+	"github.com/seanalden-great/kecilung-resto-be/utils"
 )
 
 func RegisterContactHandlers(rg *gin.RouterGroup, u domain.ContactUsecase) {
@@ -33,6 +34,13 @@ func createContact(u domain.ContactUsecase) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
+		// === TRIGGER NOTIFIKASI WEBSOCKET ===
+		utils.Hub.Broadcast <- utils.WsMessage{
+			Type:    "NEW_CONTACT_MSG",
+			Message: "Pesan baru dari " + contactData.FullName,
+		}
+		
 		c.JSON(http.StatusCreated, gin.H{"message": "Pesan Anda berhasil dikirim", "data": contactData})
 	}
 }
