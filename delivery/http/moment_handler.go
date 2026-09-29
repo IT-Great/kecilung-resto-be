@@ -1,12 +1,15 @@
 package http
 
 import (
+	"bytes"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/seanalden-great/kecilung-resto-be/domain"
 	"github.com/seanalden-great/kecilung-resto-be/utils"
+	"github.com/xuri/excelize/v2"
 )
 
 func RegisterMomentHandlers(rg *gin.RouterGroup, u domain.MomentUsecase) {
@@ -44,7 +47,7 @@ func createMomentBooking(u domain.MomentUsecase) gin.HandlerFunc {
 			Type:    "NEW_MOMENT_BOOKING",
 			Message: "Ada booking moment baru dari " + b.CustomerName,
 		}
-		
+
 		c.JSON(201, gin.H{"message": "Booking berhasil diajukan"})
 	}
 }
@@ -164,5 +167,70 @@ func deleteMomentPackage(u domain.MomentUsecase) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Moment berhasil dihapus"})
+	}
+}
+
+// === HANDLER BARU: EXPORT TO EXCEL ===
+func exportMomentBookings(u domain.MomentUsecase) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		bookings, err := u.GetAllBookings()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data booking"})
+			return
+		}
+
+		f := excelize.NewFile()
+		defer func() { _ = f.Close() }()
+
+		sheet := "Sheet1"
+		f.SetSheetName("Sheet1", "Rekap Moment")
+		sheet = "Rekap Moment"
+
+		f.SetCellValue(sheet, "A1", "ID Booking")
+		f.SetCellValue(sheet, "B1", "Nama Pelanggan")
+		f.SetCellValue(sheet, "C1", "No Telepon")
+		f.SetCellValue(sheet, "D1", "Nama Paket")
+		f.SetCellValue(sheet, "E1", "Detail Acara")
+		f.SetCellValue(sheet, "F1", "Jumlah Pax")
+		f.SetCellValue(sheet, "G1", "Waktu Mulai")
+		f.SetCellValue(sheet, "H1", "Waktu Selesai")
+		f.SetCellValue(sheet, "I1", "Status")
+
+		style, _ := f.NewStyle(&excelize.Style{
+			Font: &excelize.Font{Bold: true, Color: "FFFFFF"},
+			Fill: excelize.Fill{Type: "pattern", Color: []string{"F97316"}, Pattern: 1}, 
+		})
+		f.SetRowStyle(sheet, 1, 1, style)
+		f.SetColWidth(sheet, "A", "A", 12)
+		f.SetColWidth(sheet, "B", "C", 20)
+		f.SetColWidth(sheet, "D", "E", 30)
+		f.SetColWidth(sheet, "G", "H", 20)
+
+		row := 2
+		for _, b := range bookings {
+			if b.Status != "APPROVED" {
+				continue
+			}
+			f.SetCellValue(sheet, fmt.Sprintf("A%d", row), fmt.Sprintf("BOK-MOM-%d", b.ID))
+			f.SetCellValue(sheet, fmt.Sprintf("B%d", row), b.CustomerName)
+			f.SetCellValue(sheet, fmt.Sprintf("C%d", row), b.Phone)
+			f.SetCellValue(sheet, fmt.Sprintf("D%d", row), b.Moment.Name)
+			f.SetCellValue(sheet, fmt.Sprintf("E%d", row), b.Description)
+			f.SetCellValue(sheet, fmt.Sprintf("F%d", row), b.MemberCount)
+			f.SetCellValue(sheet, fmt.Sprintf("G%d", row), b.BookingDate.Format("02 Jan 2006 15:04"))
+			f.SetCellValue(sheet, fmt.Sprintf("H%d", row), b.BookingEndDate.Format("02 Jan 2006 15:04"))
+			f.SetCellValue(sheet, fmt.Sprintf("I%d", row), b.Status)
+			row++
+		}
+
+		var buf bytes.Buffer
+		if err := f.Write(&buf); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyusun file Excel"})
+			return
+		}
+
+		c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+		c.Header("Content-Disposition", "attachment; filename=Rekap_Booking_Moment_Approved.xlsx")
+		c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
 	}
 }

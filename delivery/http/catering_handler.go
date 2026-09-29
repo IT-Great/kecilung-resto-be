@@ -1,12 +1,15 @@
 package http
 
 import (
+	"bytes"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/seanalden-great/kecilung-resto-be/domain"
 	"github.com/seanalden-great/kecilung-resto-be/utils"
+	"github.com/xuri/excelize/v2"
 )
 
 func RegisterCateringHandlers(rg *gin.RouterGroup, u domain.CateringUsecase) {
@@ -90,7 +93,7 @@ func createBooking(u domain.CateringUsecase) gin.HandlerFunc {
 			Type:    "NEW_CATERING_BOOKING",
 			Message: "Ada booking katering baru dari " + b.CustomerName,
 		}
-		
+
 		c.JSON(201, gin.H{"message": "Booking berhasil diajukan"})
 	}
 }
@@ -223,5 +226,84 @@ func getApprovedMomentBookings(u domain.MomentUsecase) gin.HandlerFunc {
 			return
 		}
 		c.JSON(200, gin.H{"data": res})
+	}
+}
+
+// === HANDLER BARU: EXPORT TO EXCEL ===
+func exportCateringBookings(u domain.CateringUsecase) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 1. Ambil semua data dari database
+		bookings, err := u.GetAllBookings()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data booking"})
+			return
+		}
+
+		// 2. Buat File Excel baru di Memori
+		f := excelize.NewFile()
+		defer func() {
+			if err := f.Close(); err != nil {
+				// Abaikan error saat menutup memori
+			}
+		}()
+
+		sheet := "Sheet1"
+		f.SetSheetName("Sheet1", "Rekap Katering")
+		sheet = "Rekap Katering"
+
+		// 3. Menulis Header Tabel
+		f.SetCellValue(sheet, "A1", "ID Booking")
+		f.SetCellValue(sheet, "B1", "Nama Pelanggan")
+		f.SetCellValue(sheet, "C1", "No Telepon")
+		f.SetCellValue(sheet, "D1", "Nama Paket")
+		f.SetCellValue(sheet, "E1", "Detail Acara")
+		f.SetCellValue(sheet, "F1", "Jumlah Pax")
+		f.SetCellValue(sheet, "G1", "Waktu Mulai")
+		f.SetCellValue(sheet, "H1", "Waktu Selesai")
+		f.SetCellValue(sheet, "I1", "Status")
+
+		// Styling Header (Latar Belakang Orange, Teks Putih Bold)
+		style, _ := f.NewStyle(&excelize.Style{
+			Font: &excelize.Font{Bold: true, Color: "FFFFFF"},
+			Fill: excelize.Fill{Type: "pattern", Color: []string{"F97316"}, Pattern: 1}, 
+		})
+		f.SetRowStyle(sheet, 1, 1, style)
+
+		// Atur lebar kolom agar rapi
+		f.SetColWidth(sheet, "A", "A", 12)
+		f.SetColWidth(sheet, "B", "C", 20)
+		f.SetColWidth(sheet, "D", "E", 30)
+		f.SetColWidth(sheet, "G", "H", 20)
+
+		// 4. Masukkan Data ke Excel (Hanya yang APPROVED)
+		row := 2
+		for _, b := range bookings {
+			if b.Status != "APPROVED" {
+				continue // Lewati yang berstatus PENDING / REJECTED
+			}
+
+			f.SetCellValue(sheet, fmt.Sprintf("A%d", row), fmt.Sprintf("BOK-CAT-%d", b.ID))
+			f.SetCellValue(sheet, fmt.Sprintf("B%d", row), b.CustomerName)
+			f.SetCellValue(sheet, fmt.Sprintf("C%d", row), b.Phone)
+			f.SetCellValue(sheet, fmt.Sprintf("D%d", row), b.Catering.Name)
+			f.SetCellValue(sheet, fmt.Sprintf("E%d", row), b.Description)
+			f.SetCellValue(sheet, fmt.Sprintf("F%d", row), b.MemberCount)
+			f.SetCellValue(sheet, fmt.Sprintf("G%d", row), b.BookingDate.Format("02 Jan 2006 15:04"))
+			f.SetCellValue(sheet, fmt.Sprintf("H%d", row), b.BookingEndDate.Format("02 Jan 2006 15:04"))
+			f.SetCellValue(sheet, fmt.Sprintf("I%d", row), b.Status)
+			row++
+		}
+
+		// 5. Ubah data Excel ke wujud Bytes Buffer
+		var buf bytes.Buffer
+		if err := f.Write(&buf); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyusun file Excel"})
+			return
+		}
+
+		// 6. Set Header HTTP untuk memaksa Browser mendownload file (Streaming)
+		c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+		c.Header("Content-Disposition", "attachment; filename=Rekap_Booking_Katering_Approved.xlsx")
+		c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
 	}
 }
