@@ -22,6 +22,13 @@ type ArticleImage struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// CursorResponse adalah format data balikan untuk Infinite Scroll
+type ArticleCursorResponse struct {
+	Data       []Article `json:"data"`
+	NextCursor uint      `json:"next_cursor"` // ID terakhir dari batch saat ini, 0 jika habis
+	HasMore    bool      `json:"has_more"`
+}
+
 // ArticleRepository interface
 type ArticleRepository interface {
 	GetAll() ([]Article, error)
@@ -29,6 +36,9 @@ type ArticleRepository interface {
 	Create(article *Article) error
 	Update(id uint, article *Article) error
 	Delete(id uint) error
+
+	// TAMBAHAN BARU:
+	FetchWithCursor(cursor uint, limit int) ([]Article, error)
 }
 
 // ArticleUsecase interface
@@ -38,4 +48,7 @@ type ArticleUsecase interface {
 	Create(article *Article) error
 	Update(id uint, article *Article) error
 	Delete(id uint) error
+
+	// TAMBAHAN BARU:
+	GetWithCursor(cursor uint, limit int) (ArticleCursorResponse, error)
 }

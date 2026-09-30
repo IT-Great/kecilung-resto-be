@@ -48,3 +48,18 @@ func (r *articleRepository) Update(id uint, article *domain.Article) error {
 func (r *articleRepository) Delete(id uint) error {
 	return r.db.Delete(&domain.Article{}, id).Error
 }
+
+// Tambahkan fungsi ini di bawah
+func (r *articleRepository) FetchWithCursor(cursor uint, limit int) ([]domain.Article, error) {
+	var articles []domain.Article
+	
+	query := r.db.Preload("Images").Order("id asc").Limit(limit)
+	
+	// Jika cursor > 0, ambil data yang ID-nya LEBIH BESAR dari cursor sebelumnya
+	if cursor > 0 {
+		query = query.Where("id > ?", cursor)
+	}
+
+	err := query.Find(&articles).Error
+	return articles, err
+}

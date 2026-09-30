@@ -13,6 +13,9 @@ func RegisterArticleHandlers(rg *gin.RouterGroup, u domain.ArticleUsecase) {
 // === TAMBAHKAN ROUTES ARTICLE DI SINI ===
 	article := rg.Group("/articles")
 	{
+		// === RUTE BARU UNTUK INFINITE SCROLL (PUBLIK) ===
+		article.GET("/feed", getArticlesFeed(u))
+
 		article.GET("", getArticles(u))
 		article.GET("/:id", getArticleByID(u))
 		article.POST("", createArticle(u))
@@ -113,5 +116,24 @@ func deleteArticle(u domain.ArticleUsecase) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Artikel berhasil dihapus"})
+	}
+}
+
+// === HANDLER BARU: INFINITE SCROLL ===
+func getArticlesFeed(u domain.ArticleUsecase) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cursorStr := c.DefaultQuery("cursor", "0")
+		limitStr := c.DefaultQuery("limit", "5") // Default load 5 artikel per batch
+
+		cursor, _ := strconv.Atoi(cursorStr)
+		limit, _ := strconv.Atoi(limitStr)
+
+		res, err := u.GetWithCursor(uint(cursor), limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memuat feed artikel"})
+			return
+		}
+		
+		c.JSON(http.StatusOK, res)
 	}
 }
