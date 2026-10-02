@@ -47,7 +47,7 @@ func ConnectDatabase() *gorm.DB {
 
 	// 2. Format DSN (Tambahkan &tls=true di bagian belakang khusus untuk Cloud Database)
 	// dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&tls=true",
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&tls=skip-verify",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&tls=false",
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASS"),
 		host,
