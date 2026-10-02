@@ -149,6 +149,37 @@ func main() {
 		c.Next()
 	})
 
+	// === HALAMAN WELCOME API ===
+	r.GET("/", func(c *gin.Context) {
+		htmlTemplate := `
+		<!DOCTYPE html>
+		<html lang="id">
+		<head>
+			<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Kecilung Resto API</title>
+			<style>
+				body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #1a202c; color: #a0aec0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+				.container { text-align: center; }
+				h1 { color: #edf2f7; font-size: 3rem; margin-bottom: 0.5rem; font-weight: 300; letter-spacing: -1px; }
+				p { font-size: 1.2rem; }
+				.version { margin-top: 2.5rem; font-size: 0.85rem; color: #718096; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+				.status { display: inline-block; padding: 4px 12px; background-color: #2f855a; color: #c6f6d5; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; }
+			</style>
+		</head>
+		<body>
+			<div class="container">
+				<div class="status">System Online</div>
+				<h1>Kecilung Resto API</h1>
+				<p>Backend service is active and listening for requests.</p>
+				<div class="version">Powered by Go & Gin Framework</div>
+			</div>
+		</body>
+		</html>
+		`
+		c.Data(200, "text/html; charset=utf-8", []byte(htmlTemplate))
+	})
+
 	// Endpoint Debug (Opsional, untuk konsistensi)
 	r.GET("/api/debug-env", func(c *gin.Context) {
 		c.JSON(200, gin.H{
