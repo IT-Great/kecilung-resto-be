@@ -7,6 +7,7 @@ type Article struct {
 	ID          uint           `json:"id" gorm:"primaryKey"`
 	Code        string         `json:"code"`
 	Name        string         `json:"name"`
+	Slug        string         `json:"slug" gorm:"uniqueIndex"` // <-- TAMBAHAN BARU: Kolom Slug unik
 	Description string         `json:"description"`
 	Images      []ArticleImage `json:"images" gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE;"`
 	CreatedAt   time.Time      `json:"created_at"`
@@ -33,6 +34,7 @@ type ArticleCursorResponse struct {
 type ArticleRepository interface {
 	GetAll() ([]Article, error)
 	GetByID(id uint) (Article, error)
+	GetBySlug(slug string) (Article, error) // <-- TAMBAHAN BARU: Cari berdasarkan Slug
 	Create(article *Article) error
 	Update(id uint, article *Article) error
 	Delete(id uint) error
@@ -45,6 +47,7 @@ type ArticleRepository interface {
 type ArticleUsecase interface {
 	GetAll() ([]Article, error)
 	GetByID(id uint) (Article, error)
+	GetBySlug(slug string) (Article, error) // <-- TAMBAHAN BARU: Cari berdasarkan Slug
 	Create(article *Article) error
 	Update(id uint, article *Article) error
 	Delete(id uint) error

@@ -17,7 +17,7 @@ func RegisterArticleHandlers(rg *gin.RouterGroup, u domain.ArticleUsecase) {
 		article.GET("/feed", getArticlesFeed(u))
 
 		article.GET("", getArticles(u))
-		article.GET("/:id", getArticleByID(u))
+		article.GET("/:slug", getArticleBySlug(u))
 		article.POST("", createArticle(u))
 		article.PUT("/:id", updateArticle(u))
 		article.DELETE("/:id", deleteArticle(u))
@@ -43,6 +43,19 @@ func getArticleByID(u domain.ArticleUsecase) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, _ := strconv.Atoi(c.Param("id"))
 		res, err := u.GetByID(uint(id))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Data artikel tidak ditemukan"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": res})
+	}
+}
+
+// UBAH fungsi getArticleByID menjadi getArticleBySlug
+func getArticleBySlug(u domain.ArticleUsecase) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		slug := c.Param("slug") // Tangkap slug berupa huruf
+		res, err := u.GetBySlug(slug)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Data artikel tidak ditemukan"})
 			return

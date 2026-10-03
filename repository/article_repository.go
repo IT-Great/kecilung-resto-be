@@ -63,3 +63,10 @@ func (r *articleRepository) FetchWithCursor(cursor uint, limit int) ([]domain.Ar
 	err := query.Find(&articles).Error
 	return articles, err
 }
+
+// Tambahkan fungsi baru ini di bawah GetByID:
+func (r *articleRepository) GetBySlug(slug string) (domain.Article, error) {
+	var article domain.Article
+	err := r.db.Preload("Images").Where("slug = ?", slug).First(&article).Error
+	return article, err
+}

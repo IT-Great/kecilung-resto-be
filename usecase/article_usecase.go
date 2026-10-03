@@ -1,6 +1,19 @@
 package usecase
 
-import "github.com/seanalden-great/kecilung-resto-be/domain"
+import (
+	"regexp"
+	"strings"
+
+	"github.com/seanalden-great/kecilung-resto-be/domain"
+)
+
+// Helper pembentuk Slug: "Salmon Wellington! 123" -> "salmon-wellington-123"
+func generateSlug(title string) string {
+	str := strings.ToLower(title)
+	re := regexp.MustCompile("[^a-z0-9]+")
+	str = re.ReplaceAllString(str, "-")
+	return strings.Trim(str, "-")
+}
 
 type articleUsecase struct {
 	repo domain.ArticleRepository
@@ -16,6 +29,11 @@ func (u *articleUsecase) GetAll() ([]domain.Article, error) {
 
 func (u *articleUsecase) GetByID(id uint) (domain.Article, error) {
 	return u.repo.GetByID(id)
+}
+
+// Tambahkan fungsi GetBySlug
+func (u *articleUsecase) GetBySlug(slug string) (domain.Article, error) {
+	return u.repo.GetBySlug(slug)
 }
 
 func (u *articleUsecase) Create(article *domain.Article) error {
