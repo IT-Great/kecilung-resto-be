@@ -29,20 +29,42 @@ func (r *articleRepository) Create(article *domain.Article) error {
 	return r.db.Create(article).Error
 }
 
+// func (r *articleRepository) Update(id uint, article *domain.Article) error {
+// 	var existing domain.Article
+// 	if err := r.db.First(&existing, id).Error; err != nil {
+// 		return err
+// 	}
+
+// 	// Jika ada gambar baru yang dikirim, hapus relasi gambar lama agar diganti dengan yang baru
+// 	if len(article.Images) > 0 {
+// 		r.db.Where("article_id = ?", id).Delete(&domain.ArticleImage{})
+// 	}
+
+// 	article.ID = existing.ID
+// 	// FullSaveAssociations akan otomatis mengupdate dan menautkan data images baru
+// 	return r.db.Session(&gorm.Session{FullSaveAssociations: true}).Updates(article).Error
+// }
+
 func (r *articleRepository) Update(id uint, article *domain.Article) error {
 	var existing domain.Article
 	if err := r.db.First(&existing, id).Error; err != nil {
 		return err
 	}
 
-	// Jika ada gambar baru yang dikirim, hapus relasi gambar lama agar diganti dengan yang baru
+	// 1. TIMPA DATA LAMA DENGAN DATA BARU SECARA EKSPLISIT
+	existing.Code = article.Code
+	existing.Name = article.Name
+	existing.Description = article.Description
+	existing.Slug = article.Slug // <--- INI KUNCI UTAMANYA AGAR SLUG TERSIMPAN
+
+	// 2. JIKA ADA GAMBAR BARU, HAPUS GAMBAR LAMA
 	if len(article.Images) > 0 {
 		r.db.Where("article_id = ?", id).Delete(&domain.ArticleImage{})
+		existing.Images = article.Images
 	}
 
-	article.ID = existing.ID
-	// FullSaveAssociations akan otomatis mengupdate dan menautkan data images baru
-	return r.db.Session(&gorm.Session{FullSaveAssociations: true}).Updates(article).Error
+	// 3. GUNAKAN .Save() (BUKAN .Updates()) UNTUK MEMAKSA GORM MENULIS ULANG SEMUA KOLOM
+	return r.db.Session(&gorm.Session{FullSaveAssociations: true}).Save(&existing).Error
 }
 
 func (r *articleRepository) Delete(id uint) error {

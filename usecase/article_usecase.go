@@ -40,7 +40,14 @@ func (u *articleUsecase) Create(article *domain.Article) error {
 	return u.repo.Create(article)
 }
 
+// func (u *articleUsecase) Update(id uint, article *domain.Article) error {
+// 	return u.repo.Update(id, article)
+// }
+
 func (u *articleUsecase) Update(id uint, article *domain.Article) error {
+	// Baris ini akan mengisi struktur "Slug" dengan teks yang di-generate dari "Name"
+	article.Slug = generateSlug(article.Name) 
+	
 	return u.repo.Update(id, article)
 }
 
