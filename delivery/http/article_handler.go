@@ -9,15 +9,30 @@ import (
 	"github.com/seanalden-great/kecilung-resto-be/utils"
 )
 
+// func RegisterArticleHandlers(rg *gin.RouterGroup, u domain.ArticleUsecase) {
+// // === TAMBAHKAN ROUTES ARTICLE DI SINI ===
+// 	article := rg.Group("/articles")
+// 	{
+// 		// === RUTE BARU UNTUK INFINITE SCROLL (PUBLIK) ===
+// 		article.GET("/feed", getArticlesFeed(u))
+
+// 		article.GET("", getArticles(u))
+// 		article.GET("/:slug", getArticleBySlug(u))
+// 		article.POST("", createArticle(u))
+// 		article.PUT("/:id", updateArticle(u))
+// 		article.DELETE("/:id", deleteArticle(u))
+// 	}
+// }
+
 func RegisterArticleHandlers(rg *gin.RouterGroup, u domain.ArticleUsecase) {
-// === TAMBAHKAN ROUTES ARTICLE DI SINI ===
 	article := rg.Group("/articles")
 	{
-		// === RUTE BARU UNTUK INFINITE SCROLL (PUBLIK) ===
 		article.GET("/feed", getArticlesFeed(u))
-
 		article.GET("", getArticles(u))
-		article.GET("/:slug", getArticleBySlug(u))
+		
+		// UBAH BARIS INI: Gunakan :param dan panggil fungsi pendeteksi pintar
+		article.GET("/:param", getArticleDetail(u)) 
+		
 		article.POST("", createArticle(u))
 		article.PUT("/:id", updateArticle(u))
 		article.DELETE("/:id", deleteArticle(u))
@@ -39,25 +54,52 @@ func getArticles(u domain.ArticleUsecase) gin.HandlerFunc {
 	}
 }
 
-func getArticleByID(u domain.ArticleUsecase) gin.HandlerFunc {
+// func getArticleByID(u domain.ArticleUsecase) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		id, _ := strconv.Atoi(c.Param("id"))
+// 		res, err := u.GetByID(uint(id))
+// 		if err != nil {
+// 			c.JSON(http.StatusNotFound, gin.H{"error": "Data artikel tidak ditemukan"})
+// 			return
+// 		}
+// 		c.JSON(http.StatusOK, gin.H{"data": res})
+// 	}
+// }
+
+// // UBAH fungsi getArticleByID menjadi getArticleBySlug
+// func getArticleBySlug(u domain.ArticleUsecase) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		slug := c.Param("slug") // Tangkap slug berupa huruf
+// 		res, err := u.GetBySlug(slug)
+// 		if err != nil {
+// 			c.JSON(http.StatusNotFound, gin.H{"error": "Data artikel tidak ditemukan"})
+// 			return
+// 		}
+// 		c.JSON(http.StatusOK, gin.H{"data": res})
+// 	}
+// }
+
+// === FUNGSI PINTAR: BISA MENANGKAP ID (ANGKA) ATAU SLUG (HURUF) ===
+func getArticleDetail(u domain.ArticleUsecase) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id, _ := strconv.Atoi(c.Param("id"))
-		res, err := u.GetByID(uint(id))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Data artikel tidak ditemukan"})
+		param := c.Param("param")
+
+		// 1. Coba ubah param menjadi Angka (Integer)
+		if id, err := strconv.Atoi(param); err == nil {
+			// JIKA BERHASIL (Berarti ini ID dari halaman Admin)
+			res, err := u.GetByID(uint(id))
+			if err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Data artikel tidak ditemukan (ID)"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"data": res})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"data": res})
-	}
-}
 
-// UBAH fungsi getArticleByID menjadi getArticleBySlug
-func getArticleBySlug(u domain.ArticleUsecase) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		slug := c.Param("slug") // Tangkap slug berupa huruf
-		res, err := u.GetBySlug(slug)
+		// 2. JIKA GAGAL DIUBAH KE ANGKA (Berarti ini berupa Huruf/Slug dari halaman Publik)
+		res, err := u.GetBySlug(param)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Data artikel tidak ditemukan"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "Data artikel tidak ditemukan (Slug)"})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": res})
