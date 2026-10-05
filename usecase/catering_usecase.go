@@ -37,6 +37,8 @@ func (u *cateringUsecase) CreateCatering(c *domain.Catering) error { return u.re
 // === TAMBAHAN BARU ===
 func (u *cateringUsecase) UpdateCatering(id uint, c *domain.Catering) error {
 	c.ID = id
+	// KEMUNGKINAN BESAR BARIS INI TERLEWAT OLEH ANDA SEBELUMNYA:
+	c.Slug = generateCateringSlug(c.Name)
 	return u.repo.UpdateCatering(c)
 }
 
