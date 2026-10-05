@@ -2,6 +2,9 @@ package usecase
 
 import (
 	"errors"
+	"regexp"
+	"strings"
+
 	"github.com/seanalden-great/kecilung-resto-be/domain"
 )
 
@@ -13,12 +16,28 @@ func NewMomentUsecase(r domain.MomentRepository) domain.MomentUsecase {
 	return &momentUsecase{repo: r}
 }
 
+// === Helper Pembentuk Slug ===
+func generateMomentSlug(title string) string {
+	str := strings.ToLower(title)
+	re := regexp.MustCompile("[^a-z0-9]+")
+	str = re.ReplaceAllString(str, "-")
+	return strings.Trim(str, "-")
+}
+
 func (u *momentUsecase) GetAllMoments() ([]domain.Moment, error) { return u.repo.FetchAllMoments() }
 func (u *momentUsecase) GetMomentByID(id uint) (domain.Moment, error) { return u.repo.FindMomentByID(id) }
-func (u *momentUsecase) CreateMoment(m *domain.Moment) error { return u.repo.CreateMoment(m) }
+// === TAMBAHAN BARU: GetMomentBySlug ===
+func (u *momentUsecase) GetMomentBySlug(slug string) (domain.Moment, error) {
+	return u.repo.FindMomentBySlug(slug)
+}
+func (u *momentUsecase) CreateMoment(m *domain.Moment) error { 
+	m.Slug = generateMomentSlug(m.Name)
+	return u.repo.CreateMoment(m) 
+}
 
 func (u *momentUsecase) UpdateMoment(id uint, m *domain.Moment) error {
 	m.ID = id
+	m.Slug = generateMomentSlug(m.Name)
 	return u.repo.UpdateMoment(m)
 }
 

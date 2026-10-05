@@ -26,18 +26,58 @@ func (r *momentRepo) FindMomentByID(id uint) (domain.Moment, error) {
 	return moment, err
 }
 
+// === TAMBAHAN BARU: Cari via Slug ===
+func (r *momentRepo) FindMomentBySlug(slug string) (domain.Moment, error) {
+	var moment domain.Moment
+	err := r.db.Preload("Images").Where("slug = ?", slug).First(&moment).Error
+	return moment, err
+}
+
 func (r *momentRepo) CreateMoment(m *domain.Moment) error {
 	return r.db.Create(m).Error
 }
 
+// func (r *momentRepo) UpdateMoment(m *domain.Moment) error {
+// 	return r.db.Transaction(func(tx *gorm.DB) error {
+// 		if err := tx.Model(&domain.Moment{}).Where("id = ?", m.ID).Updates(map[string]interface{}{
+// 			"name":        m.Name,
+// 			"description": m.Description,
+// 		}).Error; err != nil {
+// 			return err
+// 		}
+// 		if len(m.Images) > 0 {
+// 			if err := tx.Where("moment_id = ?", m.ID).Delete(&domain.MomentImage{}).Error; err != nil {
+// 				return err
+// 			}
+// 			for i := range m.Images {
+// 				m.Images[i].MomentID = m.ID
+// 			}
+// 			if err := tx.Create(&m.Images).Error; err != nil {
+// 				return err
+// 			}
+// 		}
+// 		return nil
+// 	})
+// }
+
+// === UBAH: Fungsi Update ===
 func (r *momentRepo) UpdateMoment(m *domain.Moment) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&domain.Moment{}).Where("id = ?", m.ID).Updates(map[string]interface{}{
-			"name":        m.Name,
-			"description": m.Description,
-		}).Error; err != nil {
+		var existing domain.Moment
+		if err := tx.First(&existing, m.ID).Error; err != nil {
 			return err
 		}
+
+		// Update kolom dasar (secara eksplisit, termasuk slug)
+		existing.Name = m.Name
+		existing.Description = m.Description
+		existing.Slug = m.Slug // <-- PASTI TERSIMPAN
+
+		if err := tx.Save(&existing).Error; err != nil {
+			return err
+		}
+
+		// Manajemen Gambar (hapus lama, simpan baru)
 		if len(m.Images) > 0 {
 			if err := tx.Where("moment_id = ?", m.ID).Delete(&domain.MomentImage{}).Error; err != nil {
 				return err

@@ -16,7 +16,9 @@ func RegisterMomentHandlers(rg *gin.RouterGroup, u domain.MomentUsecase) {
 	moment := rg.Group("/moments")
 	{
 		moment.GET("/packages", getMoments(u))
-		moment.GET("/packages/:id", getMomentByID(u))
+		// moment.GET("/packages/:id", getMomentByID(u))
+		// UBAH BARIS INI: Gunakan :param alih-alih :id untuk getMomentDetail
+		moment.GET("/packages/:param", getMomentDetail(u))
 		moment.POST("/packages", createMomentPackage(u))
 		moment.PUT("/packages/:id", updateMomentPackage(u))
 		moment.DELETE("/packages/:id", deleteMomentPackage(u))
@@ -92,12 +94,38 @@ func getMoments(u domain.MomentUsecase) gin.HandlerFunc {
 	}
 }
 
-func getMomentByID(u domain.MomentUsecase) gin.HandlerFunc {
+// func getMomentByID(u domain.MomentUsecase) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		id, _ := strconv.Atoi(c.Param("id"))
+// 		res, err := u.GetMomentByID(uint(id))
+// 		if err != nil {
+// 			c.JSON(http.StatusNotFound, gin.H{"error": "Data moment tidak ditemukan"})
+// 			return
+// 		}
+// 		c.JSON(http.StatusOK, gin.H{"data": res})
+// 	}
+// }
+
+// === GANTI getMomentByID DENGAN FUNGSI PINTAR getMomentDetail ===
+func getMomentDetail(u domain.MomentUsecase) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id, _ := strconv.Atoi(c.Param("id"))
-		res, err := u.GetMomentByID(uint(id))
+		param := c.Param("param")
+
+		// 1. Coba deteksi jika input berupa ID (Angka) -> Dipakai oleh Admin Panel
+		if id, err := strconv.Atoi(param); err == nil {
+			res, err := u.GetMomentByID(uint(id))
+			if err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Data moment tidak ditemukan (ID)"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"data": res})
+			return
+		}
+
+		// 2. Jika bukan angka, anggap sebagai Slug (Huruf) -> Dipakai oleh Frontend Nuxt Publik
+		res, err := u.GetMomentBySlug(param)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Data moment tidak ditemukan"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "Data moment tidak ditemukan (Slug)"})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": res})

@@ -5,6 +5,7 @@ import "time"
 type Moment struct {
 	ID          uint          `json:"id" gorm:"primaryKey"`
 	Name        string        `json:"name"`
+	Slug        string        `json:"slug" gorm:"uniqueIndex"` // <--- TAMBAHAN: Kolom Slug Unik
 	Description string        `json:"description"`
 	Images      []MomentImage `json:"images" gorm:"foreignKey:MomentID;constraint:OnDelete:CASCADE;"`
 }
@@ -31,6 +32,7 @@ type MomentBooking struct {
 type MomentRepository interface {
 	FetchAllMoments() ([]Moment, error)
 	FindMomentByID(id uint) (Moment, error)
+	FindMomentBySlug(slug string) (Moment, error) // <--- TAMBAHAN: Fungsi Cari via Slug
 	CreateMoment(m *Moment) error
 	UpdateMoment(m *Moment) error
 	DeleteMoment(id uint) error
@@ -46,6 +48,7 @@ type MomentRepository interface {
 type MomentUsecase interface {
 	GetAllMoments() ([]Moment, error)
 	GetMomentByID(id uint) (Moment, error)
+	GetMomentBySlug(slug string) (Moment, error) // <--- TAMBAHAN: Fungsi Cari via Slug
 	CreateMoment(m *Moment) error
 	UpdateMoment(id uint, m *Moment) error
 	DeleteMoment(id uint) error
