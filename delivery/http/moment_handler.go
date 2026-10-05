@@ -23,11 +23,13 @@ func RegisterMomentHandlers(rg *gin.RouterGroup, u domain.MomentUsecase) {
 		moment.PUT("/packages/:id", updateMomentPackage(u))
 		moment.DELETE("/packages/:id", deleteMomentPackage(u))
 
+		
 		moment.GET("/bookings", getMomentBookings(u))
 		moment.POST("/bookings", createMomentBooking(u))
 		moment.PUT("/bookings/:id/approve", approveMomentBooking(u))
 		moment.PUT("/bookings/:id/reject", rejectMomentBooking(u))
-		moment.GET("/packages/:id/bookings", getApprovedMomentBookings(u))
+		// moment.GET("/packages/:id/bookings", getApprovedMomentBookings(u))
+		moment.GET("/bookings/approved/:id", getApprovedMomentBookings(u))
 	}
 }
 
