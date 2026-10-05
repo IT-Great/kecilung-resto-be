@@ -32,6 +32,13 @@ func (r *categoryRepo) FindByID(id uint) (domain.Category, error) {
 	return category, err
 }
 
+// === TAMBAHAN BARU: Cari via Slug ===
+func (r *categoryRepo) FindBySlug(slug string) (domain.Category, error) {
+	var category domain.Category
+	err := r.db.Where("slug = ?", slug).First(&category).Error
+	return category, err
+}
+
 func (r *categoryRepo) Store(c *domain.Category) error {
 	return r.db.Create(c).Error
 }

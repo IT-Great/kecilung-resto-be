@@ -13,6 +13,8 @@ func RegisterCategoryHandlers(rg *gin.RouterGroup, u domain.CategoryUsecase) {
 	cat := rg.Group("/categories")
 	{
 		cat.GET("", fetchCategories(u))
+		// === TAMBAHAN BARU: Smart Handler Detail (Bisa ID, Bisa Slug) ===
+		cat.GET("/:param", getCategoryDetail(u))
 		cat.POST("", createCategory(u))
 		cat.PUT("/:id", updateCategory(u))
 		cat.DELETE("/:id", deleteCategory(u))
@@ -120,5 +122,31 @@ func deleteCategory(u domain.CategoryUsecase) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Kategori berhasil dihapus"})
+	}
+}
+
+// === TAMBAHKAN FUNGSI INI DI PALING BAWAH ===
+func getCategoryDetail(u domain.CategoryUsecase) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		param := c.Param("param")
+
+		// 1. Cek jika Angka (ID)
+		if id, err := strconv.Atoi(param); err == nil {
+			res, err := u.GetByID(uint(id))
+			if err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Kategori tidak ditemukan (ID)"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"data": res})
+			return
+		}
+
+		// 2. Cek jika Huruf (Slug)
+		res, err := u.GetBySlug(param)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Kategori tidak ditemukan (Slug)"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": res})
 	}
 }
