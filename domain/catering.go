@@ -10,6 +10,7 @@ type GreetingMessage struct {
 type Catering struct {
 	ID          uint            `json:"id" gorm:"primaryKey"`
 	Name        string          `json:"name"`
+	Slug        string          `json:"slug" gorm:"uniqueIndex"` // <--- TAMBAHAN: Kolom Slug Unik
 	Description string          `json:"description"`
 	Images      []CateringImage `json:"images" gorm:"foreignKey:CateringID;constraint:OnDelete:CASCADE;"`
 }
@@ -39,6 +40,7 @@ type CateringRepository interface {
 
 	FetchAllCaterings() ([]Catering, error)
 	FindCateringByID(id uint) (Catering, error)
+	FindCateringBySlug(slug string) (Catering, error) // <--- TAMBAHAN: Fungsi Cari via Slug
 	CreateCatering(c *Catering) error
 	UpdateCatering(c *Catering) error // Fungsi Update Baru
 	DeleteCatering(id uint) error
@@ -57,6 +59,7 @@ type CateringUsecase interface {
 
 	GetAllCaterings() ([]Catering, error)
 	GetCateringByID(id uint) (Catering, error)
+	GetCateringBySlug(slug string) (Catering, error) // <--- TAMBAHAN: Fungsi Cari via Slug
 	CreateCatering(c *Catering) error
 	UpdateCatering(id uint, c *Catering) error // Fungsi Update Baru
 	DeleteCatering(id uint) error

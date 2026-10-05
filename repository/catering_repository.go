@@ -39,23 +39,61 @@ func (r *cateringRepo) FindCateringByID(id uint) (domain.Catering, error) {
 	return catering, err
 }
 
+// === TAMBAHAN BARU: Cari via Slug ===
+func (r *cateringRepo) FindCateringBySlug(slug string) (domain.Catering, error) {
+	var catering domain.Catering
+	err := r.db.Preload("Images").Where("slug = ?", slug).First(&catering).Error
+	return catering, err
+}
+
 func (r *cateringRepo) CreateCatering(c *domain.Catering) error {
 	return r.db.Create(c).Error
 }
 
 // === TAMBAHAN BARU: UPDATE CATERING ===
+// func (r *cateringRepo) UpdateCatering(c *domain.Catering) error {
+// 	// Gunakan transaksi agar jika gagal di tengah jalan, database di-rollback
+// 	return r.db.Transaction(func(tx *gorm.DB) error {
+// 		// 1. Update data teks utama
+// 		if err := tx.Model(&domain.Catering{}).Where("id = ?", c.ID).Updates(map[string]interface{}{
+// 			"name":        c.Name,
+// 			"description": c.Description,
+// 		}).Error; err != nil {
+// 			return err
+// 		}
+
+// 		// 2. Jika ada gambar baru yang diunggah, hapus gambar lama dan masukkan yang baru
+// 		if len(c.Images) > 0 {
+// 			if err := tx.Where("catering_id = ?", c.ID).Delete(&domain.CateringImage{}).Error; err != nil {
+// 				return err
+// 			}
+// 			for i := range c.Images {
+// 				c.Images[i].CateringID = c.ID
+// 			}
+// 			if err := tx.Create(&c.Images).Error; err != nil {
+// 				return err
+// 			}
+// 		}
+// 		return nil
+// 	})
+// }
+
 func (r *cateringRepo) UpdateCatering(c *domain.Catering) error {
-	// Gunakan transaksi agar jika gagal di tengah jalan, database di-rollback
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		// 1. Update data teks utama
-		if err := tx.Model(&domain.Catering{}).Where("id = ?", c.ID).Updates(map[string]interface{}{
-			"name":        c.Name,
-			"description": c.Description,
-		}).Error; err != nil {
+		var existing domain.Catering
+		if err := tx.First(&existing, c.ID).Error; err != nil {
 			return err
 		}
 
-		// 2. Jika ada gambar baru yang diunggah, hapus gambar lama dan masukkan yang baru
+		// Update kolom dasar (secara eksplisit, termasuk slug)
+		existing.Name = c.Name
+		existing.Description = c.Description
+		existing.Slug = c.Slug // <-- PASTI TERSIMPAN
+
+		if err := tx.Save(&existing).Error; err != nil {
+			return err
+		}
+
 		if len(c.Images) > 0 {
 			if err := tx.Where("catering_id = ?", c.ID).Delete(&domain.CateringImage{}).Error; err != nil {
 				return err

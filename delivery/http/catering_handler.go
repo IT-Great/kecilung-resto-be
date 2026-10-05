@@ -19,7 +19,9 @@ func RegisterCateringHandlers(rg *gin.RouterGroup, u domain.CateringUsecase) {
 		catering.GET("/greeting", getGreeting(u))
 		catering.PUT("/greeting", updateGreeting(u))
 		catering.GET("/packages", getCaterings(u))
-		catering.GET("/packages/:id", getCateringPackageByID(u))
+		// catering.GET("/packages/:id", getCateringPackageByID(u))
+		// UBAH BARIS INI: Gunakan :param dan panggil fungsi pintar
+		catering.GET("/packages/:param", getCateringDetail(u))
 		catering.POST("/packages", createCateringPackage(u))
 		// Tambahkan 2 baris ini di dalam RegisterHandlers -> catering := api.Group("/catering")
 		catering.PUT("/packages/:id", updateCateringPackage(u))
@@ -28,7 +30,8 @@ func RegisterCateringHandlers(rg *gin.RouterGroup, u domain.CateringUsecase) {
 		catering.POST("/bookings", createBooking(u))
 		catering.PUT("/bookings/:id/approve", approveBooking(u))
 		catering.PUT("/bookings/:id/reject", rejectBooking(u))
-		catering.GET("/packages/:id/bookings", getApprovedCateringBookings(u))
+		// catering.GET("/packages/:id/bookings", getApprovedCateringBookings(u))
+		catering.GET("/bookings/approved/:id", getApprovedCateringBookings(u))
 	}
 }
 
@@ -138,12 +141,38 @@ func getCaterings(u domain.CateringUsecase) gin.HandlerFunc {
 	}
 }
 
-func getCateringPackageByID(u domain.CateringUsecase) gin.HandlerFunc {
+// func getCateringPackageByID(u domain.CateringUsecase) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		id, _ := strconv.Atoi(c.Param("id"))
+// 		res, err := u.GetCateringByID(uint(id))
+// 		if err != nil {
+// 			c.JSON(http.StatusNotFound, gin.H{"error": "Data katering tidak ditemukan"})
+// 			return
+// 		}
+// 		c.JSON(http.StatusOK, gin.H{"data": res})
+// 	}
+// }
+
+// === GANTI getCateringPackageByID DENGAN FUNGSI PINTAR getCateringDetail ===
+func getCateringDetail(u domain.CateringUsecase) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id, _ := strconv.Atoi(c.Param("id"))
-		res, err := u.GetCateringByID(uint(id))
+		param := c.Param("param")
+
+		// 1. Deteksi angka (ID untuk Admin)
+		if id, err := strconv.Atoi(param); err == nil {
+			res, err := u.GetCateringByID(uint(id))
+			if err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Data katering tidak ditemukan (ID)"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"data": res})
+			return
+		}
+
+		// 2. Deteksi huruf (Slug untuk Publik)
+		res, err := u.GetCateringBySlug(param)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Data katering tidak ditemukan"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "Data katering tidak ditemukan (Slug)"})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": res})

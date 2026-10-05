@@ -2,6 +2,9 @@ package usecase
 
 import (
 	"errors"
+	"regexp"
+	"strings"
+
 	"github.com/seanalden-great/kecilung-resto-be/domain"
 )
 
@@ -13,10 +16,22 @@ func NewCateringUsecase(r domain.CateringRepository) domain.CateringUsecase {
 	return &cateringUsecase{repo: r}
 }
 
+// === Helper Pembentuk Slug ===
+func generateCateringSlug(title string) string {
+	str := strings.ToLower(title)
+	re := regexp.MustCompile("[^a-z0-9]+")
+	str = re.ReplaceAllString(str, "-")
+	return strings.Trim(str, "-")
+}
+
 func (u *cateringUsecase) GetGreeting() (domain.GreetingMessage, error) { return u.repo.GetGreeting() }
 func (u *cateringUsecase) UpdateGreeting(msg *domain.GreetingMessage) error { return u.repo.UpdateGreeting(msg) }
 func (u *cateringUsecase) GetAllCaterings() ([]domain.Catering, error) { return u.repo.FetchAllCaterings() }
 func (u *cateringUsecase) GetCateringByID(id uint) (domain.Catering, error) { return u.repo.FindCateringByID(id) }
+// === TAMBAHAN BARU: GetCateringBySlug ===
+func (u *cateringUsecase) GetCateringBySlug(slug string) (domain.Catering, error) {
+	return u.repo.FindCateringBySlug(slug)
+}
 func (u *cateringUsecase) CreateCatering(c *domain.Catering) error { return u.repo.CreateCatering(c) }
 
 // === TAMBAHAN BARU ===
